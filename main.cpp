@@ -6,7 +6,7 @@
 #include <cmath>
 #include "matrix.h"
 
-#define FILE_NAME R"(D:\source\clion\transportTask\in.txt)"
+#define FILE_NAME R"(D:\GoogleDrive\sync\source\clion\transportTask\in.txt)"
 
 struct Indexes {
     int i, j;
@@ -14,8 +14,9 @@ struct Indexes {
 
 class TransportTask {
 public:
-    dmatrix FindBasicPlan() {
-        HandleBalance();
+    dmatrix FindBasePlan() {
+        if (IsOpenModel())
+            ConvertOpenModelToClosed();
         if (!sorted) {
             SortByC();
             sorted = true;
@@ -23,7 +24,7 @@ public:
         auto ac = a, bc = b;
         for (auto ind: sortedByC) {
             int i = ind.i, j = ind.j;
-            if (abs(ac[i] - bc[j]) < eps/m && ac[i] > eps)
+            if (abs(ac[i] - bc[j]) < eps / m && ac[i] > eps)
                 ac[i] += eps * i / m;
             db delta = min(ac[i], bc[j]);
             x[i][j] = delta;
@@ -32,7 +33,6 @@ public:
         }
         return x;
     }
-
 
     void Input() {
         ifstream fin(FILE_NAME);
@@ -53,8 +53,7 @@ public:
         fin.close();
     }
 
-
-    void OutputResult() {
+    void OutputBasePlan() {
         setlocale(LC_ALL, "rus");
         int wid = 8, firstWid = 12, prc = 3;
         cout << setw(firstWid) << "";
@@ -65,7 +64,7 @@ public:
         for (int i = 0; i < x.size(); i++) {
             cout << setw(firstWid) << "A_" + to_string(i + 1);
             for (int j = 0; j < x[0].size(); j++)
-                printf("%8g",  round(x[i][j]*10*prc)/10./prc);
+                printf("%8g", round(x[i][j] * 10 * prc) / 10. / prc);
             cout << setw(wid) << a[i] << endl;
         }
         cout << setw(firstWid) << "Потребности";
@@ -73,13 +72,13 @@ public:
             cout << setw(wid) << bi;
         cout << setw(wid) << accumulate(a.begin(), a.end(), 0.);
         db cost = 0;
-        for(int i = 0; i < m; i++)
-            for(int j = 0; j < n; j++)
-                cost += c[i][j]*x[i][j];
+        for (int i = 0; i < m; i++)
+            for (int j = 0; j < n; j++)
+                cost += c[i][j] * x[i][j];
         cout << "\nОбщая стоимость: " << cost;
     }
 
-    TransportTask() :sorted(false), m(0), n(0) {}
+    TransportTask() : sorted(false), m(0), n(0) {}
 
 private:
     void SortByC() {
@@ -91,19 +90,25 @@ private:
              [this](Indexes first, Indexes second) { return c[first.i][first.j] < c[second.i][second.j]; });
     }
 
-    void HandleBalance(){
+    bool IsOpenModel() {
         db sumA = accumulate(a.begin(), a.end(), 0.);
         db sumB = accumulate(b.begin(), b.end(), 0.);
-        if(sumB - sumA > eps)
-        {
-            a.push_back(sumB-sumA);
+        if (abs(sumB - sumA) > eps)
+            return true;
+        return false;
+    }
+
+    void ConvertOpenModelToClosed() {
+        db sumA = accumulate(a.begin(), a.end(), 0.);
+        db sumB = accumulate(b.begin(), b.end(), 0.);
+        if (sumB - sumA > eps) {
+            a.push_back(sumB - sumA);
             x.push_back(dvector(n, 0));
             c.push_back(dvector(n, 0));
             m++;
-        }
-        else if(sumA - sumB > eps){
+        } else if (sumA - sumB > eps) {
             b.push_back(sumA - sumB);
-            for(int i = 0; i < n; i++){
+            for (int i = 0; i < n; i++) {
                 x[i].push_back(0);
                 c[i].push_back(0);
             }
@@ -123,8 +128,8 @@ private:
 int main() {
     TransportTask tr;
     tr.Input();
-    tr.FindBasicPlan();
-    tr.OutputResult();
+    tr.FindBasePlan();
+    tr.OutputBasePlan();
 
 }
 
