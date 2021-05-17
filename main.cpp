@@ -23,13 +23,18 @@ typedef vector<vector<Cell>> cellMatrix;
 
 class TransportTask {
 public:
-
     TransportTask(vector<int> &a, vector<int> &b, vector<vector<int>> &costs)
             : m((int) a.size()), n((int) b.size()), a(a), b(b) {
         cells.resize(m, vector<Cell>(n));
         for (int i = 0; i < m; i++)
             for (int j = 0; j < n; ++j)
                 cells[i][j].cost = costs[i][j];
+    }
+
+
+    cellMatrix FindOptimalPlan(){
+        auto currPlan = FindBasePlan();
+        return currPlan;
     }
 
     cellMatrix FindBasePlan() {
@@ -62,6 +67,8 @@ public:
     }
 
 private:
+
+
     void SortFieldsByC() {
         fieldsSortedByC = vector<Indexes>(n * m);
         for (int i = 0; i < m; i++)
@@ -74,16 +81,16 @@ private:
     }
 
     bool IsOpenModel() {
-        db sumA = accumulate(a.begin(), a.end(), 0.);
-        db sumB = accumulate(b.begin(), b.end(), 0.);
-        if (abs(sumB - sumA) > eps)
+        int sumA = accumulate(a.begin(), a.end(), 0);
+        int sumB = accumulate(b.begin(), b.end(), 0);
+        if (sumB != sumA)
             return true;
         return false;
     }
 
     void ConvertOpenModelToClosed() {
-        int sumA = (int) accumulate(a.begin(), a.end(), 0.);
-        int sumB = (int) accumulate(b.begin(), b.end(), 0.);
+        int sumA = accumulate(a.begin(), a.end(), 0);
+        int sumB = accumulate(b.begin(), b.end(), 0);
         if (sumB > sumA) {
             a.push_back(sumB - sumA);
             cells.push_back(vector<Cell>(n));
@@ -101,7 +108,6 @@ private:
     cellMatrix cells;
     vector<Indexes> fieldsSortedByC;
     bool sorted = false;
-    db eps = 1e-2;
 };
 
 
