@@ -18,16 +18,23 @@ public:
         if (IsOpenModel())
             ConvertOpenModelToClosed();
         if (!sorted) {
-            SortByC();
+            SortFieldsByC();
             sorted = true;
         }
         auto ac = a, bc = b;
-        for (auto ind: sortedByC) {
+        for (auto ind: fieldsSortedByC) {
             int i = ind.i, j = ind.j;
+
             if (abs(ac[i] - bc[j]) < eps / m && ac[i] > eps)
-                ac[i] += eps * i / m;
+                // Set visible cell value in row to eps
+                for (int col = 0; col < n; col++)
+                    if (b[col] > 0) {
+                        x[i][col] += eps * i / m;
+                        break;
+                    }
+
             db delta = min(ac[i], bc[j]);
-            x[i][j] = delta;
+            x[i][j] += delta;
             ac[i] -= delta;
             bc[j] -= delta;
         }
@@ -55,7 +62,7 @@ public:
 
     void OutputBasePlan() {
         setlocale(LC_ALL, "rus");
-        int wid = 8, firstWid = 12, prc = 3;
+        int wid = 8, firstWid = 12, prc = 4;
         cout << setw(firstWid) << "";
         for (int i = 0; i < b.size(); i++)
             cout << setw(wid) << "B_" + to_string(i + 1);
@@ -64,7 +71,7 @@ public:
         for (int i = 0; i < x.size(); i++) {
             cout << setw(firstWid) << "A_" + to_string(i + 1);
             for (int j = 0; j < x[0].size(); j++)
-                printf("%8g", round(x[i][j] * 10 * prc) / 10. / prc);
+                printf("%8g", round(x[i][j] * pow(10, prc)) / pow(10, prc));
             cout << setw(wid) << a[i] << endl;
         }
         cout << setw(firstWid) << "Потребности";
@@ -78,15 +85,13 @@ public:
         cout << "\nОбщая стоимость: " << cost;
     }
 
-    TransportTask() : sorted(false), m(0), n(0) {}
-
 private:
-    void SortByC() {
-        sortedByC = vector<Indexes>(n * m);
+    void SortFieldsByC() {
+        fieldsSortedByC = vector<Indexes>(n * m);
         for (int i = 0; i < m; i++)
             for (int j = 0; j < n; j++)
-                sortedByC[i * n + j] = {i, j};
-        sort(sortedByC.begin(), sortedByC.end(),
+                fieldsSortedByC[i * n + j] = {i, j};
+        sort(fieldsSortedByC.begin(), fieldsSortedByC.end(),
              [this](Indexes first, Indexes second) { return c[first.i][first.j] < c[second.i][second.j]; });
     }
 
@@ -116,11 +121,11 @@ private:
         }
     }
 
-    int m, n;
+    int m = 0, n = 0;
     dvector a, b;
     dmatrix c, x;
-    vector<Indexes> sortedByC;
-    bool sorted;
+    vector<Indexes> fieldsSortedByC;
+    bool sorted = false;
     db eps = 1e-2;
 };
 
