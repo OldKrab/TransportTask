@@ -15,6 +15,8 @@ struct Indexes {
 struct Cell {
     int value = 0, cost = 0;
     bool isBasic = false;
+
+    bool IsEps() const {return isBasic && value == 0;}
 };
 
 class TransportTask {
@@ -77,7 +79,7 @@ public:
         for (int i = 0; i < m; i++) {
             cout << setw(firstWid) << "A_" + to_string(i + 1);
             for (int j = 0; j < n; j++)
-                if (cells[i][j].isBasic && cells[i][j].value == 0)
+                if (cells[i][j].IsEps())
                     printf("%*s", wid, "eps");
                 else
                     printf("%*g", wid, round(cells[i][j].value * pow(10, prc)) / pow(10, prc));
