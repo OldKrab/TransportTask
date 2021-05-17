@@ -16,13 +16,22 @@ struct Cell {
     int value = 0, cost = 0;
     bool isBasic = false;
 
-    bool IsEps() const {return isBasic && value == 0;}
+    bool IsEps() const { return isBasic && value == 0; }
 };
 
-class TransportTask {
-    typedef vector<vector<Cell>> cellMatrix;
+typedef vector<vector<Cell>> cellMatrix;
 
+class TransportTask {
 public:
+
+    TransportTask(vector<int> &a, vector<int> &b, vector<vector<int>> &costs)
+            : m((int) a.size()), n((int) b.size()), a(a), b(b) {
+        cells.resize(m, vector<Cell>(n));
+        for (int i = 0; i < m; i++)
+            for (int j = 0; j < n; ++j)
+                cells[i][j].cost = costs[i][j];
+    }
+
     cellMatrix FindBasePlan() {
         if (IsOpenModel())
             ConvertOpenModelToClosed();
@@ -35,7 +44,7 @@ public:
             int i = ind.i, j = ind.j;
 
             if (ac[i] == bc[j] && ac[i] > 0)
-                // Set visible cell value in row to basic
+                // Set active cell in row to basic eps
                 for (int col = 0; col < n; col++)
                     if (bc[col] > 0) {
                         cells[i][col].isBasic = true;
@@ -50,50 +59,6 @@ public:
             bc[j] -= delta;
         }
         return cells;
-    }
-
-    void Input() {
-        ifstream fin(FILE_NAME);
-        fin >> m >> n;
-        a.resize(m);
-        for (int i = 0; i < m; i++)
-            fin >> a[i];
-        b.resize(n);
-        for (int i = 0; i < n; i++)
-            fin >> b[i];
-        cells = cellMatrix(m, vector<Cell>(n));
-        for (int i = 0; i < m; i++)
-            for (int j = 0; j < n; j++)
-                fin >> cells[i][j].cost;
-        fin.close();
-    }
-
-    void OutputBasePlan() {
-        setlocale(LC_ALL, "rus");
-        int wid = 8, firstWid = 12, prc = 4;
-        cout << setw(firstWid) << "";
-        for (int i = 0; i < b.size(); i++)
-            cout << setw(wid) << "B_" + to_string(i + 1);
-        cout << setw(wid) << "Запасы" << endl;
-
-        for (int i = 0; i < m; i++) {
-            cout << setw(firstWid) << "A_" + to_string(i + 1);
-            for (int j = 0; j < n; j++)
-                if (cells[i][j].IsEps())
-                    printf("%*s", wid, "eps");
-                else
-                    printf("%*g", wid, round(cells[i][j].value * pow(10, prc)) / pow(10, prc));
-            cout << setw(wid) << a[i] << endl;
-        }
-        cout << setw(firstWid) << "Потребности";
-        for (double bi : b)
-            cout << setw(wid) << bi;
-        cout << setw(wid) << accumulate(a.begin(), a.end(), 0.);
-        db cost = 0;
-        for (int i = 0; i < m; i++)
-            for (int j = 0; j < n; j++)
-                cost += cells[i][j].cost * cells[i][j].value;
-        cout << "\nОбщая стоимость: " << cost;
     }
 
 private:
@@ -131,7 +96,7 @@ private:
         }
     }
 
-    int m = 0, n = 0;
+    int m, n;
     vector<int> a, b;
     cellMatrix cells;
     vector<Indexes> fieldsSortedByC;
@@ -140,11 +105,60 @@ private:
 };
 
 
-int main() {
-    TransportTask tr;
-    tr.Input();
-    tr.FindBasePlan();
-    tr.OutputBasePlan();
-
+void Input(vector<int> &a, vector<int> &b, vector<vector<int>> &costs) {
+    ifstream fin(FILE_NAME);
+    int m, n;
+    fin >> m >> n;
+    a.resize(m);
+    for (int i = 0; i < m; i++)
+        fin >> a[i];
+    b.resize(n);
+    for (int i = 0; i < n; i++)
+        fin >> b[i];
+    costs = vector<vector<int>>(m, vector<int>(n));
+    for (int i = 0; i < m; i++)
+        for (int j = 0; j < n; j++)
+            fin >> costs[i][j];
+    fin.close();
 }
 
+void OutputPlan(vector<int> &a, vector<int> &b, cellMatrix &cells) {
+    setlocale(LC_ALL, "rus");
+    int wid = 8, firstWid = 12, prc = 4;
+
+    cout << setw(firstWid) << "";
+    for (int i = 0; i < b.size(); i++)
+        cout << setw(wid) << "B_" + to_string(i + 1);
+    cout << setw(wid) << "Запасы" << endl;
+
+    for (int i = 0; i < a.size(); i++) {
+        cout << setw(firstWid) << "A_" + to_string(i + 1);
+        for (int j = 0; j < b.size(); j++)
+            if (cells[i][j].IsEps())
+                printf("%*s", wid, "eps");
+            else
+                printf("%*g", wid, round(cells[i][j].value * pow(10, prc)) / pow(10, prc));
+        cout << setw(wid) << a[i] << endl;
+    }
+    cout << setw(firstWid) << "Потребности";
+    for (double bi : b)
+        cout << setw(wid) << bi;
+
+    cout << setw(wid) << accumulate(a.begin(), a.end(), 0.);
+
+    db cost = 0;
+    for (int i = 0; i < a.size(); i++)
+        for (int j = 0; j < b.size(); j++)
+            cost += cells[i][j].cost * cells[i][j].value;
+    cout << "\nОбщая стоимость: " << cost;
+}
+
+int main() {
+    vector<int> a, b;
+    vector<vector<int>> costs;
+
+    Input(a, b, costs);
+    TransportTask tr(a, b, costs);
+    auto plan = tr.FindBasePlan();
+    OutputPlan(a, b, plan);
+}
